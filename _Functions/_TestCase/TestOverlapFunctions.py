@@ -4,7 +4,7 @@ import OverlapFunctions as over
 
 # MAIN
 print'''
- This is a test module for functions in  OverlapFunctions.py #
+ This is a test module for functions in OverlapFunctions.py 
 
  Run with -v for more output 
 
@@ -71,18 +71,18 @@ if "140000_150000" in indexes and "1560000_1570000" in indexes and "610000_62000
 if verbosity > 0:
     print "GetIndexes: " + result
 
-# Test AddGFFtoIndex
-over.AddGFFToIndex([test_lines1,0,1,2],seq_index_dict,span)
+# Test AddtoIndex
+over.AddToIndex([test_lines1,0,1,2],seq_index_dict,span)
 
 if verbosity > 0:
-    print "AddGFFToIndex Ran"
+    print "AddToIndex Ran"
 
 result = "Failed"
 if ("20875055","20875554","Ps007391") in seq_index_dict["Chr5"]["20870000_20880000"] and ("17143007","17143506","Ps007364") in seq_index_dict["Chr1"]["17140000_17150000"]:
     result = "Passed"
 
 if verbosity > 0:
-    print "AddGFFToIndex: " + result
+    print "AddToIndex: " + result
 if verbosity > 1:
     print "\tObserved: " + str(seq_index_dict["Chr5"]["20870000_20880000"])
     print "\tObserved: " + str(seq_index_dict["Chr1"]["17140000_17150000"])
@@ -119,13 +119,13 @@ if verbosity > 0:
     print "FindOverlapsByIndexing Ran"
 
 result = "Failed"
-if overlap_dict[("Chr1","3631","4130")][0] == "AT1G01010" and overlap_dict[("Chr1","3631","4130")][1] == ("3631","4130","AT1G01010") and sorted_keys[-1] == ("Chr5","20875055","20875554"):
+if overlap_dict[("Chr1","3631","4130",0)][0] == "AT1G01010" and overlap_dict[("Chr1","3631","4130",0)][1] == ("3631","4130","AT1G01010") and sorted_keys[-1] == ("Chr5","20875055","20875554",101):
     result = "Passed"
 
 if verbosity > 0:
     print "FindOverlapsByIndexing: " + result
 if verbosity > 1:
-    print "\tObserved: " + str(overlap_dict[("Chr1","3631","4130")])
+    print "\tObserved: " + str(overlap_dict[("Chr1","3631","4130",0)])
     print "\tObserved: " + str(sorted_keys[-1])
     print "\tExpected: ['AT1G01010', ('3631', '4130', 'AT1G01010'), 1]" 
-    print "\tExpected: ('Chr5', '20875055', '20875554')"
+    print "\tExpected: ('Chr5', '20875055', '20875554',101)"

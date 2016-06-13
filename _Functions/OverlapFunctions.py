@@ -1,4 +1,4 @@
-## DEV NOTES ##
+# DEV NOTES ##
 # General
 # -These functions are derived from the overlap functions in 
 # /mnt/home/lloydjo1/scripts/gff_manager.py
@@ -7,6 +7,7 @@
 #
 # Version History
 # - (6/10/2016) Initial version development
+# - (6/13/2016) Add overlap by bisection for target features a single position
 
 #######################
 ### GENERAL IMPORTS ###
@@ -112,7 +113,7 @@ def GetIndexes(start,stop,span):
 
     return index_list
 
-def AddGFFToIndex(file_vars,seq_index_dict,span,sep="\t"):
+def AddToIndex(file_vars,seq_index_dict,span,sep="\t"):
     ''' Add the features from a file to an indexed postional dictionary
 
         Input:
@@ -125,7 +126,7 @@ def AddGFFToIndex(file_vars,seq_index_dict,span,sep="\t"):
              -sep = Seperator character for file parsing
 
         Output:
-             -Note, dictionary is upated in the script
+             -None, dictionary is upated in the script
 
         Subfunctions:
              -GetIndex(start,stop,span)
@@ -157,7 +158,10 @@ def AddGFFToIndex(file_vars,seq_index_dict,span,sep="\t"):
 
         # Add feature to each index it overlaps
         for idx in dict_indexes:
-            seq_index_dict[seq][idx].add((start,stop,remainder))
+            try:
+                seq_index_dict[seq][idx].add((start,stop,remainder))
+            except KeyError:
+                print "Warning: Index " + idx + " for feature at " + seq + ": " + start + " - " + stop + " is not in the indexed sequence dictionary"
 
 def TestOverlap(start1,stop1,start2,stop2):
     ''' Test if two features overlap based on their position
@@ -215,13 +219,18 @@ def FindOverlapsByIndexing(ref,target,span,sep="\t"):
         Subfunctions:
              -FindSeqMax(lines,seq_idx,stop_idx,seq_max_dict)
              -IndexSequenecs(seq_max_dict,span)
-             -AddGFFToIndex(file_vars,seq_index_dict,span)
+             -AddToIndex(file_vars,seq_index_dict,span)
              -TestOverlap(start1,stop1,start2,stop2)
 
         Notes:
+             -IMPORTANT: The function EXPLICITLY treat each line in the reference 
+             and target file as a seperate features because multiple features
+             may have the same coordiantes (i.e. reads)
              -IMPORTANT: The start and stop coordinates MUST be ordered beforehand.
              This script assumes that the start coordindate ALWAYS comes before 
              the stop coordinate on the defined sequenec
+             -IMPORTANT: The lines for each file should be stripe of the "\n" character before
+             being passed through this function
     '''
 
     # Breakdown our variable list, cause we don't need all of them all the time
@@ -239,13 +248,14 @@ def FindOverlapsByIndexing(ref,target,span,sep="\t"):
     seq_index_dict = IndexSequences(seq_max_dict,span)
 
     # Add the target featurs to the 
-    AddGFFToIndex(target,seq_index_dict,span,sep)
+    AddToIndex(target,seq_index_dict,span,sep)
 
+    # For each referrence feature...
     sorted_keys = []
     overlap_dict = {}
-    for ln in ref_lines:
+    for ln_idx in range(len(ref_lines)): # IMPORTANT, we use index here because there may be multiple featurs with the same location
         # Split ln
-        split_ln = ln.split(sep)
+        split_ln = ref_lines[ln_idx].split(sep)
  
         # Get the values we need
         seq = split_ln[ref_seq]
@@ -256,8 +266,8 @@ def FindOverlapsByIndexing(ref,target,span,sep="\t"):
         remainder = ",".join([split_ln[i] for i in range(len(split_ln)) if i not in [ref_seq,ref_start,ref_stop]])
 
         # Define entry in overlap dictionary and add to sorted_keys
-        overlap_dict[(seq,start,stop)] = [remainder]
-        sorted_keys.append((seq,start,stop))
+        overlap_dict[(seq,start,stop,ln_idx)] = [remainder]
+        sorted_keys.append((seq,start,stop,ln_idx))
 
         # Get indexes of the feature
         dict_indexes = GetIndexes(start,stop,span)
@@ -268,7 +278,7 @@ def FindOverlapsByIndexing(ref,target,span,sep="\t"):
             try:
                 comparison_features.extend(list(seq_index_dict[seq][index]))
             except KeyError:
-                print "Warning: Index " + index + " is out of range"
+                print "Warning: Index " + index + " for feature at " + seq + ": " + start + " - " + stop + " is not in the indexed sequence dictionary"
                   
         comparison_features = list(set(comparison_features)) # De-dup the comparison list
 
@@ -281,14 +291,14 @@ def FindOverlapsByIndexing(ref,target,span,sep="\t"):
             # If there is an overlap, add it to our dictionary
             if overlap == True:
                 count_overlaps = count_overlaps + 1
-                overlap_dict[(seq,start,stop)].append(comp)
+                overlap_dict[(seq,start,stop,ln_idx)].append(comp)
 
         # If the there were not overlaps, create a ("NA","NA","NA") field
         if count_overlaps == 0:
-            overlap_dict[(seq,start,stop)].append(("NA","NA","NA"))
-            overlap_dict[(seq,start,stop)].append(count_overlaps)
+            overlap_dict[(seq,start,stop,ln_idx)].append(("NA","NA","NA"))
+            overlap_dict[(seq,start,stop,ln_idx)].append(count_overlaps)
         else:
-            overlap_dict[(seq,start,stop)].append(count_overlaps)
+            overlap_dict[(seq,start,stop,ln_idx)].append(count_overlaps)
     
     return overlap_dict, sorted_keys
 
@@ -296,7 +306,135 @@ def FindOverlapsByIndexing(ref,target,span,sep="\t"):
 # Functions for find the set of single point features (i.e. SNPs, methylated sites)
 # with a feature with length (i.e. a gene)
 
-def FindOverlapByBisection(ref,target,sep="\t")
+def UpdateSeqDict(lines,seq_idx,seq_dict,sep="\t"):
+    '''Add sequences in a feature file to the sequence dictionary
+
+    Input:
+          -lines = The lines from the feature file 
+          -seq_idx = The index of sequence column in the feature file
+          -seq_dict = The dictionary to be updated
+
+    Optional:
+         -sep = Seperator character for file parsing
+
+    Ouput:
+          -None, dictionary is updated in the function
+
+    '''
+
+    # Get a list of sequenecs
+    Seqs = set([ln.split(sep)[seq_idx] for ln in lines])
+    
+    # Update dictionary
+    for s in Seqs:
+        if not s in seq_dict:
+            seq_dict[s] = [[],[]]
+
+def GetRemainder(line,negative_idxs,sep="\t"):
+    ''' Get remainders of a feature line
+        
+    Input: 
+         -line = a feature line
+         -negative_idxs = indexes in the feature line which define the position (i.e. not part of the remainder)
+          
+    Optional:
+         -sep = Seperator chracter for file parsing
+
+    Ouput:
+         -remainder = part of the line which defines properties of the feature other than position
+
+    Notes:
+         -Mostly, I just seperated this out in order to keep the code clean. I don't like nesting implicit for loops
+    '''
+    split_ln = line.split("\t")
+    remainder = ",".join([split_ln[i] for i in range(len(split_ln)) if not i in negative_idxs])
+    return remainder
+
+def SortPairedLists(listA,listB):
+    ''' Sort a pair of lists by the values in the first list
+
+    Input:
+         listA = first list
+         listB = second list
+    
+    Ouput:
+         sort_listA = first list sorted by first list
+         sort_listB = second list sorted by first list
+
+    '''
+    sort_listA = [A for (A,B) in sorted(zip(listA,listB), key=lambda pair: pair[0])]
+    sort_listB = [B for (A,B) in sorted(zip(listA,listB), key=lambda pair: pair[0])]
+    return [sort_listA,sort_listB]
+
+
+def AddtoSeq(file_vars,seq_dict,sep="\t"):
+    ''' Add single postion features from a file to sequence dictionary
+
+    Input:
+         -file_vars = A list definfing the following features of the features file:
+                      [lines, sequence_col#, position_col#]
+         -seq_dict = A dictionary of sequence to be filled
+
+    Optional:
+         -sep = Seperator chracter for file parsing
+
+    Output:
+          -None, dictionary is updated in the script
+
+    Subfunctions:
+          -GetRemainder(lines,negative_idxs,sep="\t")
+          -SortPairedLists(list1,list2)
+    '''
+
+    # Get variables for out featulre file
+    [lines,seq_idx,posit_idx] = file_vars
+    
+    # Make sure indexes are ints
+    seq_idx = int(seq_idx)
+    posit_idx = int(posit_idx)
+    
+    # For each sequence in the sequence dictionary
+    for seq in seq_dict.keys():
+        # Get indexes for the current seq
+        
+        # Get features on the current seq
+        seq_indexes = [i for i in range(len(lines)) if lines[i].split("\t")[seq_idx] == seq]
+
+        # Get position and remainder
+        position_list = [int(lines[i].split("\t")[posit_idx]) for i in seq_indexes] #Need intergers for sorting and comparison
+        remainder_list = [GetRemainder(lines[i],[seq_idx,posit_idx],sep) for i in seq_indexes]
+        
+        # Sort lists and add to dict
+        [sort_position_list, sort_remainder_list] = SortPairedLists(position_list,remainder_list)
+        seq_dict[seq][0] = sort_position_list
+        seq_dict[seq][1] = sort_remainder_list
+
+def BisectFeature(start,stop,lists):
+    '''Find the position defineded by list overlapped by the region defined by start top stop
+
+    Input:
+         -start = the start loci of the region
+         -stop = the end loci of the region
+         -list = the position [0] and remainder [1] values of the features 
+
+    Ouput: 
+         -filt_list = the lists in list filtered for overlap in the region
+
+    Note:
+         -This function requires the bisect library
+    '''
+    import bisect
+    # Find where the ergion start/stop fit in the sorted position list
+    start_index = bisect.bisect_left(lists[0],start)
+    stop_index = bisect.bisect_right(lists[0],stop)
+
+    # Alter return based on the poistion of the stop index
+    if stop_index > len(lists[0]) - 1: # If the stop index is beyond the list
+        return [lists[0][start_index:],lists[1][start_index:]]
+    else: 
+        return [lists[0][start_index:stop_index],lists[1][start_index:stop_index]]        
+
+def FindOverlapByBisection(ref,target,sep="\t"):
     '''Find overlaps between a set of features with length (in ref) and a 
     set of single point features (in target)
 
@@ -321,12 +459,63 @@ def FindOverlapByBisection(ref,target,sep="\t")
          -sorted_keys = a list of keys of overlap_dict ordered by according to their appearance in the ref file
     
     Subfunctions:
+         -UpdateSeqDict(lines,seq_idx,seq_dictsep="\t")
+         -AddtoSeq(file_vars,seq_dict,sep="\t")
+         -BisectFeature(start,stop,lists)
 
     Notes:
 
     '''
 
-    ### INCOMPLETE ###
+    # Breakdown variable list, not all values will be needed all the time
+    ref_lines = ref[0]
+    tar_lines = target[0]
+    [ref_seq,ref_start,ref_stop] = [int(i) for i in ref[1:]]
+    [tar_seq,tar_posit] = [int(i) for i in target[1:]]
+ 
+    # Make a dictionary of sequences
+    seq_dict = {}
+    UpdateSeqDict(ref_lines,ref_seq,seq_dict,sep)
+    UpdateSeqDict(tar_lines,tar_seq,seq_dict,sep)
+    
+    # Add target features to the sequene dictionary
+    AddtoSeq(target,seq_dict,sep)
+
+    # For each referrence feature
+    sorted_keys = []
+    overlap_dict = {}
+    for ln_idx in range(len(ref_lines)): # IMPORTANT, we use index here because there may be multiple features with the same location
+         
+        # Split ln
+        split_ln = ref_lines[ln_idx].split(sep)
+
+        # Get the values we need
+        seq = split_ln[ref_seq]
+        start = split_ln[ref_start]
+        stop =  split_ln[ref_stop]
+       
+        # Get everyhing else
+        remainder = ",".join([split_ln[i] for i in range(len(split_ln)) if i not in [ref_seq,ref_start,ref_stop]])
+
+        # Define entry in overlap dictionary and add to sorted_keys
+        overlap_dict[(seq,start,stop,ln_idx)] = [remainder]
+        sorted_keys.append((seq,start,stop,ln_idx))
+
+        # Get the seq of the feature
+        seq_features = seq_dict[seq]
+
+        # Get the overlaping position
+        overlapping_features = BisectFeature(int(start),int(stop),seq_features)
+        overlap_number = len(overlapping_features[0])
+
+        # Update overlap_dict
+        if overlap_number == 0:
+            overlap_dict[(seq,start,stop,ln_idx)].append([("NA","NA")])
+        else:
+            overlap_dict[(seq,start,stop,ln_idx)].extend([(str(pair[0]),pair[1]) for pair in zip(overlapping_features[0],overlapping_features[1])])
+        overlap_dict[(seq,start,stop,ln_idx)].append(overlap_number)
+ 
+    return overlap_dict, sorted_keys
 
 ## 3. Generic Utility Functions ##
 # Generic utility functions for reading and writing files related to overlap
@@ -393,7 +582,7 @@ def WriteOverlapLines(overlap_dict,sorted_keys,outfile):
     for key in sorted_keys:
         # Define a baseline for each ref feature
         remainder = overlap_dict[key][0]
-        base_ln = "\t".join(list(key)) + "\t" + remainder
+        base_ln = "\t".join(list(key[0:3])) + "\t" + remainder
 
         # Write a line for each overlap
         overlaps = overlap_dict[key][1:-1]
@@ -425,7 +614,7 @@ def WriteOverlapNumber(overlap_dict,sorted_keys,outfile):
         # Define a baseline for each ref feature
         remainder = overlap_dict[key][0]
         number = overlap_dict[key][-1]
-        outlines.append("\t".join(list(key)) + "\t" + remainder + "\t" + str(number) + "\n")
+        outlines.append("\t".join(list(key[0:3])) + "\t" + remainder + "\t" + str(number) + "\n")
  
     #Write the lines to file
     output = open(outfile,"w")
