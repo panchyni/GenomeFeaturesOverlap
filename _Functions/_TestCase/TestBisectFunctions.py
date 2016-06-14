@@ -105,7 +105,7 @@ if overlap_dict[sorted_keys[4]][-2] == ('11070', '') and overlap_dict[sorted_key
     result = "Passed"   
 
 if verbosity > 0:
-    print "BisectFeatures: " + result
+    print "FindOverlapByBisection: " + result
 if verbosity > 1:
     print "\tResult: " + str(overlap_dict[sorted_keys[4]][-2]) + " ; " + str(overlap_dict[sorted_keys[5]][-3]) + " ; " + str(overlap_dict[sorted_keys[5]][-2])
     print "\tExpected:  ('11070', '') ;  ('17830', '') ; ('17860', '')"

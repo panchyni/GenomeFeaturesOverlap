@@ -518,7 +518,7 @@ def FindOverlapByBisection(ref,target,sep="\t"):
 
         # Update overlap_dict
         if overlap_number == 0:
-            overlap_dict[(seq,start,stop,ln_idx)].append([("NA","NA")])
+            overlap_dict[(seq,start,stop,ln_idx)].append(("NA","NA"))
         else:
             overlap_dict[(seq,start,stop,ln_idx)].extend([(str(pair[0]),pair[1]) for pair in zip(overlapping_features[0],overlapping_features[1])])
         overlap_dict[(seq,start,stop,ln_idx)].append(overlap_number)
@@ -617,6 +617,7 @@ def WriteOverlapLines(overlap_dict,sorted_keys,outfile):
     outlines = []  
     for key in sorted_keys:
         # Define a baseline for each ref feature
+
         remainder = overlap_dict[key][0]
         base_ln = "\t".join(list(key[0:3])) + "\t" + remainder
 
