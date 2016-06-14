@@ -42,25 +42,6 @@ for seq in expected:
 if verbosity > 0:
     print "UpdateSeqDict: " + result
 
-# Test GetRemainder
-negative_idxs = [0,3,4]
-r1 = over.GetRemainder(test_lines1[0],negative_idxs)
-negative_idxs= [0,1]
-r2 = over.GetRemainder(test_lines2[0],negative_idxs)
-
-if verbosity > 0:
-    print "GetRemainder Ran"
-
-result = "Failed"
-if r2 == "" and r1 == "phytozomev10,gene,.,-,.,ID=Cre10.g417426.v5.5;Name=Cre10.g417426":
-    result = "Passed"
-
-if verbosity > 0:
-    print "GetRemainder: " + result
-if verbosity > 1:
-    print "Observed: " + str(r2) + " ; " + str(r1) 
-    print "Expected:   ; phytozomev10,gene,.,-,.,ID=Cre10.g417426.v5.5;Name=Cre10.g417426"
-
 # Test SortPairedList
 listA = [0,6,2,5,4,1,7,3]
 listB = ['h','b','f','c','d','g','a','e']
@@ -75,10 +56,10 @@ if sortA == [0,1,2,3,4,5,6,7] and sortB == ['h','g','f','e','d','c','b','a']:
    result = "Passed"
 
 if verbosity > 0:
-    print "SortPairedList : " + result
+    print "SortPairedList: " + result
 if verbosity > 1:
-    print "Observed: " + str(sortA) + " ; " + str(sortB)
-    print "Expected: [0,1,2,3,4,5,6,7] ; [h,g,f,e,d,c,b,a]" 
+    print "\tResult: " + str(sortA) + " ; " + str(sortB)
+    print "\tExpected: [0,1,2,3,4,5,6,7] ; [h,g,f,e,d,c,b,a]" 
 
 # Test AddtoSeq
 over.AddtoSeq([test_lines2,0,1],seq_dict)
@@ -110,8 +91,8 @@ if bf_1[1] == ['e', 'd', 'c'] and bf_2[1] == ['e'] and bf_3[1] ==  ['e', 'd', 'c
 if verbosity > 0:
     print "BisectFeatures: " + result
 if verbosity > 1:
-      print "Observed : " + str(bf_1) + " ; " + str(bf_2) + " ; " + str(bf_3) + " ; " + str(bf_4) + " ; " + str(bf_5)
-      print "Expected : ['e', 'd', 'c'] ; ['e'] ; ['e', 'd', 'c', 'b', 'a'] ; ['c', 'd', 'e', 'f', 'g', 'h'] ; ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']"
+      print "\tResult: " + str(bf_1) + " ; " + str(bf_2) + " ; " + str(bf_3) + " ; " + str(bf_4) + " ; " + str(bf_5)
+      print "\tExpected: ['e', 'd', 'c'] ; ['e'] ; ['e', 'd', 'c', 'b', 'a'] ; ['c', 'd', 'e', 'f', 'g', 'h'] ; ['c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']"
 
 # Test FindOverlapByBisection
 [overlap_dict,sorted_keys] = over.FindOverlapByBisection([test_lines1[-20:-10],0,3,4],[test_lines2[-10:],0,1])
@@ -126,5 +107,5 @@ if overlap_dict[sorted_keys[4]][-2] == ('11070', '') and overlap_dict[sorted_key
 if verbosity > 0:
     print "BisectFeatures: " + result
 if verbosity > 1:
-    print "Observed: " + str(overlap_dict[sorted_keys[4]][-2]) + " ; " + str(overlap_dict[sorted_keys[5]][-3]) + " ; " + str(overlap_dict[sorted_keys[5]][-2])
-    print "Expected:  ('11070', '') ;  ('17830', '') ; ('17860', '')"
+    print "\tResult: " + str(overlap_dict[sorted_keys[4]][-2]) + " ; " + str(overlap_dict[sorted_keys[5]][-3]) + " ; " + str(overlap_dict[sorted_keys[5]][-2])
+    print "\tExpected:  ('11070', '') ;  ('17830', '') ; ('17860', '')"

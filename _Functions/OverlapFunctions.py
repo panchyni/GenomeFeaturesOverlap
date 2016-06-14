@@ -20,6 +20,33 @@ import math
 ### FUNCTIONS ###
 #################
 
+## 0. General Functions ##
+# Functions use in more than one pipeline keep. Should include only very
+# basic processes not already in python
+
+def FilterList(in_list,indexes,keep=True):
+    ''' Takes a in_list and filteres by a list of indexes
+
+    Input:
+         -in_list = the unmodified input list
+         -indexes = the list of indexes to fliter the list by
+         -keep = flag that control whether to keep (True) or exclude (False) the indexes
+ 
+    Output:
+         -out_list = the filtered list 
+      
+    '''
+
+    if keep == True:
+        out_list = [in_list[i] for i in range(len(in_list)) if i in indexes] 
+        return out_list
+    elif keep == False:
+        out_list = [in_list[i] for i in range(len(in_list)) if i not in indexes]
+        return out_list
+    else:
+        print "Warning: Unrecogized value " + str(keep) + " for flag keep. Returning the original list"
+        return in_list
+
 ## 1. Indexed Overlapping Functions ##
 # Functions for finding overlaps between two sets of features with length (i.e.
 # two list of genes) using an indexed dictioanry
@@ -229,7 +256,7 @@ def FindOverlapsByIndexing(ref,target,span,sep="\t"):
              -IMPORTANT: The start and stop coordinates MUST be ordered beforehand.
              This script assumes that the start coordindate ALWAYS comes before 
              the stop coordinate on the defined sequenec
-             -IMPORTANT: The lines for each file should be stripe of the "\n" character before
+             -IMPORTANT: The lines for each file should be striped of the "\n" character before
              being passed through this function
     '''
 
@@ -330,26 +357,6 @@ def UpdateSeqDict(lines,seq_idx,seq_dict,sep="\t"):
         if not s in seq_dict:
             seq_dict[s] = [[],[]]
 
-def GetRemainder(line,negative_idxs,sep="\t"):
-    ''' Get remainders of a feature line
-        
-    Input: 
-         -line = a feature line
-         -negative_idxs = indexes in the feature line which define the position (i.e. not part of the remainder)
-          
-    Optional:
-         -sep = Seperator chracter for file parsing
-
-    Ouput:
-         -remainder = part of the line which defines properties of the feature other than position
-
-    Notes:
-         -Mostly, I just seperated this out in order to keep the code clean. I don't like nesting implicit for loops
-    '''
-    split_ln = line.split("\t")
-    remainder = ",".join([split_ln[i] for i in range(len(split_ln)) if not i in negative_idxs])
-    return remainder
-
 def SortPairedLists(listA,listB):
     ''' Sort a pair of lists by the values in the first list
 
@@ -382,7 +389,7 @@ def AddtoSeq(file_vars,seq_dict,sep="\t"):
           -None, dictionary is updated in the script
 
     Subfunctions:
-          -GetRemainder(lines,negative_idxs,sep="\t")
+          -FilterList(in_list,indexes,keep=True)
           -SortPairedLists(list1,list2)
     '''
 
@@ -402,7 +409,7 @@ def AddtoSeq(file_vars,seq_dict,sep="\t"):
 
         # Get position and remainder
         position_list = [int(lines[i].split("\t")[posit_idx]) for i in seq_indexes] #Need intergers for sorting and comparison
-        remainder_list = [GetRemainder(lines[i],[seq_idx,posit_idx],sep) for i in seq_indexes]
+        remainder_list = [",".join(FilterList(lines[i].split(sep),[seq_idx,posit_idx],keep=False)) for i in seq_indexes]
         
         # Sort lists and add to dict
         [sort_position_list, sort_remainder_list] = SortPairedLists(position_list,remainder_list)
@@ -464,6 +471,7 @@ def FindOverlapByBisection(ref,target,sep="\t"):
          -BisectFeature(start,stop,lists)
 
     Notes:
+         -See Notes for "FindOverlapsByIndexing"
 
     '''
 
@@ -562,10 +570,38 @@ def ReadCtlFileForOverlap(file):
 
     return argument_dict
 
+def FilterLines(lines,keep_idxs,sep="\t"):
+    ''' Takes a list of lines and filters to only keep certains columns
+
+    Input:
+          -lines = a list of text lines to be filtered
+          -keep_idxs = a list of indexes of the columns to keep after filtering
+
+    Optional:
+          -sep = the character that seperates columns in lines
+
+    Output:
+          -filtered_lines = a list of lines filtered for columns defined by keep_idxs
+
+    Subfunctions:
+          - FilterList(in_list,indexes,keep=True)
+
+    Notes:
+          -IMPORTANT: The text lines in "lines" should be stripped of the "\n" character before being
+          passed to this function. It assumes no "\n" is present and will not at one if the
+          final field is dropped
+          -IMPORTANT: Recall that python indexes from 0, so keep_idxs should be adjusted BEFORE passing
+          to this function 
+    '''
+
+    split_lines = [ln.split(sep) for ln in lines]
+    filtered_lines = [sep.join(FilterList(split_ln,keep_idxs)) for split_ln in split_lines]
+    return filtered_lines
+
 def WriteOverlapLines(overlap_dict,sorted_keys,outfile):
     ''' Write overlaps from a overlap dictionary to an output file
 
-        Inputs:
+        Input:
               -overlap_dict = an overlap dictionary generated by "FindOverlapsByIndexing"
               -sorted_keys = a list of keys generated by "FindOverlapsByIndexing"
               -outfile = the name of the outfile

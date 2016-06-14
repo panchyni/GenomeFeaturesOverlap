@@ -75,3 +75,20 @@ if verbosity > 1:
     print "\tResult: " + str(outlines[0].split("\t")[0]) + " " + str(outlines[3].split("\t")[1:3]) + " " + str(outlines[4].split("\t")[3:])
     print "\tExpexted: Chr1 [5928,6427] [AT1G01030,1]"
 
+# Test KeepLines 
+gff_lines = [ln.strip() for ln in open("GFF.test","r").readlines()]
+
+filter_gff_lines = over.FilterLines(gff_lines,[0,2,3,4,8])
+
+if verbosity > 0:
+    print "FilterLines Ran"
+
+result = "Failed"
+if filter_gff_lines[0] == "chromosome_10\tgene\t3314\t5025\tID=Cre10.g417426.v5.5;Name=Cre10.g417426" and filter_gff_lines[-1] == "chromosome_9\tgene\t53436\t57227\tID=Cre09.g386161.v5.5;Name=Cre09.g386161":
+    result = "Passed"
+
+if verbosity > 0:
+    print "FilterLines " + result
+if verbosity > 1:
+    print "\tResult: " + str(filter_gff_lines[0]) + "\t " + str(filter_gff_lines[-1])
+    print "\tExpexted: chromosome_10\tgene\t3314\t5025\tID=Cre10.g417426.v5.5;Name=Cre10.g417426 \n chromosome_9\tgene\t53436\t57227\tID=Cre09.g386161.v5.5;Name=Cre09.g386161 "

@@ -84,8 +84,8 @@ if ("20875055","20875554","Ps007391") in seq_index_dict["Chr5"]["20870000_208800
 if verbosity > 0:
     print "AddToIndex: " + result
 if verbosity > 1:
-    print "\tObserved: " + str(seq_index_dict["Chr5"]["20870000_20880000"])
-    print "\tObserved: " + str(seq_index_dict["Chr1"]["17140000_17150000"])
+    print "\tResult: " + str(seq_index_dict["Chr5"]["20870000_20880000"])
+    print "\tResult: " + str(seq_index_dict["Chr1"]["17140000_17150000"])
     print "\tExpected: set([('20875055', '20875554', 'Ps007391')])"
     print "\tExpected: set([('17143007', '17143506', 'Ps007364')])"
 
@@ -125,7 +125,7 @@ if overlap_dict[("Chr1","3631","4130",0)][0] == "AT1G01010" and overlap_dict[("C
 if verbosity > 0:
     print "FindOverlapsByIndexing: " + result
 if verbosity > 1:
-    print "\tObserved: " + str(overlap_dict[("Chr1","3631","4130",0)])
-    print "\tObserved: " + str(sorted_keys[-1])
+    print "\tResult: " + str(overlap_dict[("Chr1","3631","4130",0)])
+    print "\tResult: " + str(sorted_keys[-1])
     print "\tExpected: ['AT1G01010', ('3631', '4130', 'AT1G01010'), 1]" 
     print "\tExpected: ('Chr5', '20875055', '20875554',101)"
